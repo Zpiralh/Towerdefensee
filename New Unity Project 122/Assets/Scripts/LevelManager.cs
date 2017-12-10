@@ -9,6 +9,9 @@ public class LevelManager : MonoBehaviour
     [SerializeField]
     private GameObject[] tilePrefabs;
 
+    [SerializeField]
+    private CameraMovement cameraMovement;
+
     // Palauttaa tilen koon 
     public float TileSize
     {
@@ -36,6 +39,8 @@ public class LevelManager : MonoBehaviour
         //laskee kentän y koon
         int mapY = mapData.Length;
 
+        Vector3 maxTile = Vector3.zero;
+
         Vector3 worldStart = Camera.main.ScreenToWorldPoint(new Vector3(0, Screen.height));
 
         for (int y = 0; y < mapY; y++) // Y:n sijainti
@@ -45,12 +50,14 @@ public class LevelManager : MonoBehaviour
 
             for (int x = 0; x < mapX; x++) // X:n sijainti
             {
-                PlaceTile(newTiles[x].ToString(), x, y, worldStart);
+                maxTile = PlaceTile(newTiles[x].ToString(), x, y, worldStart);
             }
         }
+
+        cameraMovement.SetLimits(new Vector3(maxTile.x + TileSize, maxTile.y - TileSize));
     }
 
-    private void PlaceTile(string tileType, int x, int y, Vector3 worldStart)
+    private Vector3 PlaceTile(string tileType, int x, int y, Vector3 worldStart)
     {
         int tileIndex = int.Parse(tileType);
         // Tekee uuden tilen ja viittaa siihen newTile muuttujassa
@@ -58,6 +65,7 @@ public class LevelManager : MonoBehaviour
 
         // Käyttää newTile muuttujaa muuttaakseen tilen sijaintia
         newTile.transform.position = new Vector3(worldStart.x + (TileSize * x), worldStart.y - (TileSize * y), 0);
+        return newTile.transform.position;
     }
 
     private string[] ReadLevelText()
