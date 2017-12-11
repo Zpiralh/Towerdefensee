@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LevelManager : MonoBehaviour
+public class LevelManager : Singleton<LevelManager>
 {
     // Prefab yhdelle tilelle
     [SerializeField]
@@ -11,6 +11,19 @@ public class LevelManager : MonoBehaviour
 
     [SerializeField]
     private CameraMovement cameraMovement;
+
+    [SerializeField]
+    private Transform map;
+
+    private Point blueSpawn, redSpawn;
+
+    [SerializeField]
+    private GameObject blueEndPrefab;
+
+    [SerializeField]
+    private GameObject redStartPrefab;
+
+    public Dictionary<Point, TileScript> Tiles { get; set; }
 
     // Palauttaa tilen koon 
     public float TileSize
@@ -25,12 +38,17 @@ public class LevelManager : MonoBehaviour
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update ()
+    {
 		
 	}
+
+
     // Tekee levelin
     private void CreateLevel()
     {
+
+        Tiles = new Dictionary<Point, TileScript>();
 
         string[] mapData = ReadLevelText();
 
@@ -50,22 +68,28 @@ public class LevelManager : MonoBehaviour
 
             for (int x = 0; x < mapX; x++) // X:n sijainti
             {
-                maxTile = PlaceTile(newTiles[x].ToString(), x, y, worldStart);
+                PlaceTile(newTiles[x].ToString(), x, y, worldStart);
             }
         }
 
+        maxTile = Tiles[new Point(mapX - 1, mapY - 1)].transform.position;
+
         cameraMovement.SetLimits(new Vector3(maxTile.x + TileSize, maxTile.y - TileSize));
+
+        SpawnPoints();
     }
 
-    private Vector3 PlaceTile(string tileType, int x, int y, Vector3 worldStart)
+    private void PlaceTile(string tileType, int x, int y, Vector3 worldStart)
     {
         int tileIndex = int.Parse(tileType);
         // Tekee uuden tilen ja viittaa siihen newTile muuttujassa
-        GameObject newTile = Instantiate(tilePrefabs[tileIndex]);
+        TileScript newTile = Instantiate(tilePrefabs[tileIndex]).GetComponent<TileScript>();
 
         // Käyttää newTile muuttujaa muuttaakseen tilen sijaintia
-        newTile.transform.position = new Vector3(worldStart.x + (TileSize * x), worldStart.y - (TileSize * y), 0);
-        return newTile.transform.position;
+        newTile.Setup(new Point(x, y), new Vector3(worldStart.x + (TileSize * x), worldStart.y - (TileSize * y), 0), map);
+
+       
+
     }
 
     private string[] ReadLevelText()
@@ -75,5 +99,17 @@ public class LevelManager : MonoBehaviour
         string data = bindData.text.Replace(Environment.NewLine, string.Empty);
 
         return data.Split('-');
+    }
+
+    //Käytetään "Tiles" dictionaryy jotta saadaan spawnpointti ja tarkka tilen sijainti ja laitetaan "redStart" siihen
+    private void SpawnPoints()
+    {
+        redSpawn = new Point(0, 0);
+
+        Instantiate(redStartPrefab, Tiles[redSpawn].GetComponent<TileScript>().WorldPosition, Quaternion.identity);
+
+        blueSpawn = new Point(13, 3);
+
+        Instantiate(blueEndPrefab, Tiles[blueSpawn].GetComponent<TileScript>().WorldPosition, Quaternion.identity);
     }
 }
